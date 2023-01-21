@@ -9,6 +9,24 @@ StringBuilder memory = new StringBuilder();
 
 while (true)
 {
+    firstRun = CheckIfFirstRun(firstRun);
+
+    string? question = Console.ReadLine();
+
+    if (string.IsNullOrEmpty(question))
+    {
+        continue;
+    }
+    else if (question.ToLower() == "exit")
+    {
+        break;
+    }
+
+    await CallGpt(api, memory, question);
+}
+
+static bool CheckIfFirstRun(bool firstRun)
+{
     if (firstRun)
     {
         Console.WriteLine("\nWhat is your question please? (Type 'exit' to quit) \n");
@@ -18,22 +36,30 @@ while (true)
     {
         Console.Write("\n(Type 'exit' to quit) >>> ");
     }
-    string? question = Console.ReadLine();
-    if (string.IsNullOrEmpty(question))
-    {
-        continue;
-    }
-    else if (question.ToLower() == "exit")
-    {
-        break;
-    }
+
+    return firstRun;
+}
+
+static async Task CallGpt(OpenAIAPI api, StringBuilder memory, string? question)
+{
     memory.Append($" {question}");
-    CompletionRequest request = new CompletionRequest(question, Model.DavinciText, 200, 0.5, presencePenalty: 0.1, frequencyPenalty: 0.1);
+    
+    CompletionRequest request = new CompletionRequest(
+        question,
+        Model.DavinciText,
+        200,
+        0.5,
+        presencePenalty: 0.1,
+        frequencyPenalty: 0.1
+        );
+
     request.Prompt += memory.ToString();
+
     await foreach (var token in api.Completions.StreamCompletionEnumerableAsync(request))
     {
         memory.Append($" {token}");
         Console.Write(token);
     }
+
     Console.WriteLine();
 }
